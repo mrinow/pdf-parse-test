@@ -113,6 +113,8 @@ const PdfSignatureExtractor = () => {
         if (match) {
           const byteRange = match.slice(1, 5).map(Number);
 
+          console.log(byteRange);
+
           // Extract the actual bytes specified by the ByteRange
           const part1 = typedArray.slice(
             byteRange[0],
@@ -142,7 +144,7 @@ const PdfSignatureExtractor = () => {
 
       if (signatureBytes) {
         // setSignatureBytes(signatureBytes);
-        console.log("signature string:", signatureBytes);
+        console.log("signature string:", extractedSignaturesString);
         console.log("YES!!!");
         const uint8Array = new Uint8Array(signatureBytes);
         const arrayBuffer = uint8Array.buffer;
@@ -159,6 +161,70 @@ const PdfSignatureExtractor = () => {
     }
 
     // console.log("Extracted signatures string:", extractedSignaturesString);
+
+    const ihash = await sha256(extractedSignaturesString);
+    console.log("Hash of extracted signatures:", ihash);
+
+    const id = extractEnvelopeId(extractedSignaturesString);
+    console.log("Found the envelope ID:", id);
+
+    return extractedSignatures;
+  };
+
+  const findSignatures2 = async (typedArray) => {
+    let extractedSignaturesString = "";
+    let extractedSignaturesArray = {};
+    const extractedSignatures = [];
+
+    // Convert typedArray to PDFDocument
+    const pdfDoc = await PDFDocument.load(typedArray);
+
+    // Define the regex pattern to find signature blocks
+    const signatureRegex =
+      /\/ByteRange\s*\[\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*\]/;
+
+    // Iterate through the PDF document objects to find signatures
+    for (const [ref, obj] of pdfDoc.context.indirectObjects) {
+      if (obj) {
+        const byteData = obj.contents
+          ? obj.contents.toString()
+          : obj.toString();
+
+        // Apply the regex pattern to find signature blocks
+        const match = signatureRegex.exec(byteData);
+
+        if (match) {
+          const byteRange = match.slice(1, 5).map(Number);
+
+          // Extract the actual bytes specified by the ByteRange
+          const part1 = typedArray.slice(
+            byteRange[0],
+            byteRange[0] + byteRange[1]
+          );
+          const part2 = typedArray.slice(
+            byteRange[2],
+            byteRange[2] + byteRange[3]
+          );
+          const signatureBytes = new Uint8Array([...part1, ...part2]);
+
+          const signatureData = {
+            byteRange,
+            signatureBytes: Array.from(signatureBytes), // Convert Uint8Array to regular array for JSON serialization
+            content: byteData,
+          };
+
+          //   console.log("zzzzzzz", JSON.stringify(signatureBytes));
+
+          extractedSignatures.push(signatureData);
+          extractedSignaturesArray = signatureBytes;
+          extractedSignaturesString += `${signatureBytes}\n`;
+        }
+      }
+    }
+
+    console.log("yyyyy", extractedSignaturesArray);
+
+    console.log("Extracted signatures string:", extractedSignaturesString);
 
     const ihash = await sha256(extractedSignaturesString);
     console.log("Hash of extracted signatures:", ihash);
