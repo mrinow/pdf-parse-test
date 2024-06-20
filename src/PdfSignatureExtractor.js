@@ -19,7 +19,7 @@ const PdfSignatureExtractor = () => {
       const typedArray = new Uint8Array(event.target.result);
 
       try {
-        const extractedSignatures = await findSignatures1(typedArray);
+        const extractedSignatures = await findSignatures2(typedArray);
 
         setSignatures(extractedSignatures);
       } catch (error) {
@@ -46,7 +46,9 @@ const PdfSignatureExtractor = () => {
       /\/ByteRange\s*\[(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\]\s*\/Contents\s*\(.*\)/g;
 
     // Convert typedArray to PDFDocument
-    const pdfDoc = await PDFDocument.load(typedArray);
+    const pdfDoc = await PDFDocument.load(typedArray, {
+      ignoreEncryption: true,
+    });
 
     // Iterate through the PDF document objects or content streams to find signatures
     pdfDoc.context.indirectObjects.forEach((obj) => {
@@ -93,7 +95,9 @@ const PdfSignatureExtractor = () => {
     const extractedSignatures = [];
 
     // Convert typedArray to PDFDocument
-    const pdfDoc = await PDFDocument.load(typedArray);
+    const pdfDoc = await PDFDocument.load(typedArray, {
+      ignoreEncryption: true,
+    });
 
     // Define the regex pattern to find signature blocks
     const signatureRegex =
@@ -177,7 +181,9 @@ const PdfSignatureExtractor = () => {
     const extractedSignatures = [];
 
     // Convert typedArray to PDFDocument
-    const pdfDoc = await PDFDocument.load(typedArray);
+    const pdfDoc = await PDFDocument.load(typedArray, {
+      ignoreEncryption: true,
+    });
 
     // Define the regex pattern to find signature blocks
     const signatureRegex =
@@ -222,15 +228,17 @@ const PdfSignatureExtractor = () => {
       }
     }
 
-    console.log("yyyyy", extractedSignaturesArray);
+    // console.log("yyyyy", extractedSignaturesArray);
 
     console.log("Extracted signatures string:", extractedSignaturesString);
+    const first70000Elements = extractedSignaturesArray.subarray(0, 70000);
 
-    const ihash = await sha256(extractedSignaturesString);
+    const ihash = await sha256(first70000Elements);
+    // const ihash = await sha256(extractedSignaturesString);
     console.log("Hash of extracted signatures:", ihash);
 
-    const id = extractEnvelopeId(extractedSignaturesString);
-    console.log("Found the envelope ID:", id);
+    // const id = extractEnvelopeId(extractedSignaturesString);
+    // console.log("Found the envelope ID:", id);
 
     return extractedSignatures;
   };
