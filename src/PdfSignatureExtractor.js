@@ -4,6 +4,7 @@ import { sha256, sha384 } from "crypto-hash";
 
 const PdfSignatureExtractor = () => {
   const [signatures, setSignatures] = useState([]);
+  const [docHash, setDocHash] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleFileUpload = async (event) => {
@@ -178,6 +179,7 @@ const PdfSignatureExtractor = () => {
   const findSignatures2 = async (typedArray) => {
     let extractedSignaturesString = "";
     let extractedSignaturesArray = {};
+    let extractedpart1 = {};
     const extractedSignatures = [];
 
     // Convert typedArray to PDFDocument
@@ -211,6 +213,7 @@ const PdfSignatureExtractor = () => {
             byteRange[2],
             byteRange[2] + byteRange[3]
           );
+          extractedpart1 = new Uint8Array(part1);
           const signatureBytes = new Uint8Array([...part1, ...part2]);
 
           const signatureData = {
@@ -230,10 +233,20 @@ const PdfSignatureExtractor = () => {
 
     // console.log("yyyyy", extractedSignaturesArray);
 
-    console.log("Extracted signatures string:", extractedSignaturesString);
-    const first70000Elements = extractedSignaturesArray.subarray(0, 70000);
+    // console.log("Extracted signatures string:", extractedSignaturesString);
+    const subtractedItems =
+      extractedpart1.length * 0.01 < 800 ? 800 : extractedpart1.length * 0.01;
+
+    console.log("subtracted value", subtractedItems);
+    console.log("Extracted signatures string:", extractedpart1.length);
+    const first70000Elements = extractedpart1.subarray(
+      0,
+      extractedpart1.length - subtractedItems
+    );
+    // const first70000Elements = extractedSignaturesArray.subarray(0, 70000);
 
     const ihash = await sha256(first70000Elements);
+    setDocHash(ihash);
     // const ihash = await sha256(extractedSignaturesString);
     console.log("Hash of extracted signatures:", ihash);
 
@@ -250,13 +263,16 @@ const PdfSignatureExtractor = () => {
       {loading && <p>Loading...</p>}
       {signatures.length > 0 && (
         <div>
-          <h3>Extracted Signatures:</h3>
+          <h3>Document Hash:</h3>
+          <h4>{docHash}</h4>
           <ul>
-            {signatures.map((signature, index) => (
-              <li key={index}>
-                <pre>{JSON.stringify(signature, null, 2)}</pre>
-              </li>
-            ))}
+            {
+              // signatures.map((signature, index) => (
+              //   <li key={index}>
+              //     <pre>{JSON.stringify(signature, null, 2)}</pre>
+              //   </li>
+              // ))
+            }
           </ul>
         </div>
       )}
